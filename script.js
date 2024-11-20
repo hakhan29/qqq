@@ -49,14 +49,12 @@ video.addEventListener('play', () => {
                 fear: `rgba(128, 0, 128, ${expressions.fear || 0})`          // 보라
             };
 
-            // 6각형 그리기
+            // 6각형 중심 및 반지름 설정
             const centerX = hexCanvas.width / 2;
             const centerY = hexCanvas.height / 2;
             const radius = 100;
 
-            hexContext.clearRect(0, 0, hexCanvas.width, hexCanvas.height);
-
-            // 6각형의 각 꼭짓점
+            // 6각형 꼭짓점 계산
             const points = [];
             for (let i = 0; i < 6; i++) {
                 const angle = (Math.PI / 3) * i;
@@ -66,7 +64,29 @@ video.addEventListener('play', () => {
                 });
             }
 
-            // 꼭짓점별 색상 설정
+            // 캔버스 초기화
+            hexContext.clearRect(0, 0, hexCanvas.width, hexCanvas.height);
+
+            // 그라데이션 생성
+            const gradient = hexContext.createRadialGradient(centerX, centerY, 10, centerX, centerY, radius);
+            Object.keys(colors).forEach((emotion, index) => {
+                const color = colors[emotion];
+                gradient.addColorStop(index / 6, color);
+            });
+
+            // 6각형 경로 그리기
+            hexContext.beginPath();
+            hexContext.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                hexContext.lineTo(points[i].x, points[i].y);
+            }
+            hexContext.closePath();
+
+            // 그라데이션 채우기
+            hexContext.fillStyle = gradient;
+            hexContext.fill();
+
+            // 꼭짓점에 색상 표시 (각 감정 색상)
             points.forEach((point, index) => {
                 const colorKeys = Object.keys(colors);
                 const color = colors[colorKeys[index]];
@@ -77,36 +97,6 @@ video.addEventListener('play', () => {
                 hexContext.fill();
                 hexContext.closePath();
             });
-
-            // 중앙에서 색상 혼합 (삼각형 방식)
-            hexContext.beginPath();
-            hexContext.moveTo(points[0].x, points[0].y);
-            for (let i = 1; i < points.length; i++) {
-                hexContext.lineTo(points[i].x, points[i].y);
-            }
-            hexContext.closePath();
-
-            // 혼합 색상 (가중 평균)
-            const mixedColor = Object.keys(expressions).reduce(
-                (acc, emotion) => {
-                    const weight = expressions[emotion] || 0;
-                    const [r, g, b, a] = colors[emotion]
-                        .match(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/)
-                        .slice(1)
-                        .map(Number);
-                    acc.r += r * weight;
-                    acc.g += g * weight;
-                    acc.b += b * weight;
-                    acc.a += a * weight;
-                    return acc;
-                },
-                { r: 0, g: 0, b: 0, a: 0 }
-            );
-
-            hexContext.fillStyle = `rgba(${Math.round(mixedColor.r)}, ${Math.round(mixedColor.g)}, ${Math.round(
-                mixedColor.b
-            )}, ${Math.min(1, mixedColor.a)})`;
-            hexContext.fill();
         } else {
             hexContext.clearRect(0, 0, hexCanvas.width, hexCanvas.height);
         }
